@@ -11,7 +11,7 @@
   (String.concat
     &[@"<a href='"
       @url
-      @"' data-indicator:loading data-on:click=\"evt.preventDefault(); @get(el.href); history.pushState({}, '', el.href)\">"
+      @"' data-indicator:loading data-on:click=\"evt.preventDefault(); window.archiveNavigation.preparePostNavigation(); history.pushState(window.archiveNavigation.postHistoryState(), '', el.href); @get(el.href)\">"
       @label
       @"</a>"]))
 
@@ -55,7 +55,7 @@
       @"</time></div></header><div class='post-body'>"
       @body
       @"</div></article>"
-      @"<a class='archive-orb' href='/' aria-label='Return to the writing archive' data-indicator:loading data-on:click=\"evt.preventDefault(); @get('/'); history.pushState({}, '', '/')\"><span></span><span></span><span></span><b>Archive</b></a>"
+      @"<a class='archive-orb' href='/' aria-label='Return to the writing archive' data-indicator:loading data-on:click=\"evt.preventDefault(); if (!window.archiveNavigation.backToArchive()) { window.archiveNavigation.restoreAfterNextFetch(0); history.pushState({gzmaskScrollY: 0}, '', '/'); @get('/') }\"><span></span><span></span><span></span><b>Archive</b></a>"
       @"<span class='loading-indicator' data-show='$loading'>retrieving memory…</span></main>"]))
 
 (defn document [title main-content]
@@ -65,8 +65,8 @@
       @"<meta name='description' content='A personal archive by gzmask.'>"
       (page-title title)
       @"<link rel='stylesheet' href='/styles.css'>"
-      @"<script type='module' src='/datastar.js'></script></head>"
-      @"<body data-on:popstate__window=\"@get(window.location.pathname)\">"
+      @"<script type='module' src='/datastar.js'></script><script type='module' src='/navigation.js'></script></head>"
+      @"<body data-on:popstate__window=\"window.archiveNavigation.handlePopState(); @get(window.location.pathname)\">"
       @"<header class='site-header'><a href='/' class='identity'>gzmask<span>/ archive</span></a><span class='coordinates'>47.6° N · 122.3° W</span></header>"
       @main-content
       @"<footer><span>Built with Carp + Datastar</span><span>Seattle, WA</span></footer>"
