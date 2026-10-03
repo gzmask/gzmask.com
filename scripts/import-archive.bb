@@ -7,7 +7,7 @@
             [clojure.data.xml :as xml]
             [clojure.java.io :as io]
             [clojure.string :as str])
-  (:import [java.time LocalDateTime ZoneOffset ZonedDateTime]
+  (:import [java.time Instant LocalDateTime ZoneId ZoneOffset ZonedDateTime]
            [java.time.format DateTimeFormatter]
            [java.util Locale]))
 
@@ -17,6 +17,8 @@
 (def posts-directory "content/posts")
 (def media-directory "public/media")
 (def metadata-path "content/posts.json")
+(def rednote-metadata-path "content/rednote-posts.json")
+(def rednote-image-base-url "https://sns-img-qc.xhscdn.com/")
 (def carp-index-path "posts.carp")
 
 (def request-options
@@ -43,11 +45,17 @@
   (-> (reduce-kv str/replace value named-html-entities)
       (str/replace #"&#(?:x([0-9a-fA-F]+)|(\d+));" decode-numeric-entity)))
 
-(defn html-safe-title [value]
-  (-> (decode-html-entities value)
+(defn html-safe [value]
+  (-> value
       (str/replace "&" "&amp;")
       (str/replace "<" "&lt;")
       (str/replace ">" "&gt;")
+      (str/replace "\"" "&quot;")))
+
+(defn html-safe-title [value]
+  (-> value
+      decode-html-entities
+      html-safe
       str/trim))
 
 (defn normalized-title [value]
@@ -81,11 +89,13 @@
   (.format (LocalDateTime/parse raw-date) output-date-format))
 
 (defn sort-key [raw-date]
-  (try
-    (.toEpochMilli (.toInstant
-                     (ZonedDateTime/parse raw-date DateTimeFormatter/RFC_1123_DATE_TIME)))
-    (catch Exception _
-      (.toEpochMilli (.toInstant (LocalDateTime/parse raw-date) ZoneOffset/UTC)))))
+  (if (number? raw-date)
+    (long raw-date)
+    (try
+      (.toEpochMilli (.toInstant
+                       (ZonedDateTime/parse raw-date DateTimeFormatter/RFC_1123_DATE_TIME)))
+      (catch Exception _
+        (.toEpochMilli (.toInstant (LocalDateTime/parse raw-date) ZoneOffset/UTC))))))
 
 (defn extension-for [url content-type]
   (cond
@@ -208,6 +218,55 @@
                              (normalized-title (get-in % [:title :rendered]))))
          (mapv parse-wordpress-post))))
 
+(defn rednote-display-date [timestamp]
+  (.format (.atZone (Instant/ofEpochMilli timestamp)
+                    (ZoneId/of "America/Los_Angeles"))
+           output-date-format))
+
+(defn rednote-description-html [description]
+  (let [cleaned (-> description
+                    (str/replace "\r\n" "\n")
+                    (str/replace #"\[话题\]#" "")
+                    str/trim)]
+    (if (str/blank? cleaned)
+      ""
+      (->> (str/split cleaned #"\n\s*\n")
+           (map #(str "<p>"
+                      (-> % html-safe (str/replace "\n" "<br>"))
+                      "</p>"))
+           (str/join)))))
+
+(defn rednote-image-url [path]
+  (str rednote-image-base-url path "?imageView2/2/w/1600"))
+
+(defn rednote-images-html [images]
+  (->> images
+       (map (fn [{:keys [path width height]}]
+              (str "<figure><img loading=\"lazy\" decoding=\"async\" referrerpolicy=\"no-referrer\""
+                   " alt=\"\" src=\"" (rednote-image-url path) "\""
+                   " width=\"" width "\" height=\"" height "\"></figure>")))
+       (str/join)))
+
+(defn parse-rednote-post [post]
+  (let [id (str "rednote-" (:id post))
+        timestamp (:time post)
+        images (mapv (fn [{:keys [path]}]
+                       {:remote-url (rednote-image-url path)})
+                     (:images post))]
+    {:id id
+     :title (html-safe-title (:title post))
+     :published (rednote-display-date timestamp)
+     :published-raw timestamp
+     :source "rednote"
+     :source-url (:sourceUrl post)
+     :html (str (rednote-description-html (:desc post))
+                (rednote-images-html (:images post)))
+     :images images}))
+
+(defn parse-rednote-posts []
+  (mapv parse-rednote-post
+        (json/parse-string (slurp rednote-metadata-path) true)))
+
 (defn carp-string [value]
   (str "@\""
        (-> value
@@ -252,7 +311,8 @@
   (let [medium-posts (parse-medium-feed (fetch-text medium-feed-url))
         wordpress-posts (parse-wordpress-posts (fetch-text wordpress-api-url)
                                                medium-posts)
-        posts (->> (concat medium-posts wordpress-posts)
+        rednote-posts (parse-rednote-posts)
+        posts (->> (concat medium-posts wordpress-posts rednote-posts)
                    (sort-by (comp - sort-key :published-raw))
                    vec)]
     (doseq [{:keys [id html]} posts]
@@ -260,10 +320,19 @@
     (spit metadata-path
           (json/generate-string (mapv #(dissoc % :html) posts) {:pretty true}))
     (write-carp-index! posts)
-    (println (format "Imported %d posts (%d Medium, %d WordPress) and %d images"
+    (println (format (str "Imported %d posts (%d Medium, %d WordPress, %d Rednote), "
+                          "%d local images and %d remote images")
                      (count posts)
                      (count medium-posts)
                      (count wordpress-posts)
-                     (reduce + (map #(count (:images %)) posts))))))
+                     (count rednote-posts)
+                     (reduce + (map #(if (= "rednote" (:source %))
+                                       0
+                                       (count (:images %)))
+                                    posts))
+                     (reduce + (map #(if (= "rednote" (:source %))
+                                       (count (:images %))
+                                       0)
+                                    posts))))))
 
 (import!)

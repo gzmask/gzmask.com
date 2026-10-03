@@ -1,6 +1,7 @@
 #!/usr/bin/env bb
 
 (ns smoke-test
+  (:refer-clojure :exclude [ensure])
   (:require [babashka.http-client :as http]
             [babashka.process :as process]
             [cheshire.core :as json]
@@ -41,9 +42,11 @@
               "Index eagerly included post media"))
 
     (let [posts (json/parse-string (slurp "content/posts.json") true)]
-      (ensure (= 82 (count posts)) "Expected the complete 82-post archive")
+      (ensure (= 112 (count posts)) "Expected the complete 112-post archive")
       (ensure (= 72 (count (filter #(= "wordpress" (:source %)) posts)))
               "Expected all 72 non-duplicate WordPress posts")
+      (ensure (= 30 (count (filter #(= "rednote" (:source %)) posts)))
+              "Expected all 30 non-video Rednote posts")
       (doseq [{:keys [id title images]} posts]
         (let [article (request (str "/posts/" id) {})]
           (ensure (= 200 (:status article)) (str "Post route failed: " id))
@@ -51,10 +54,22 @@
                   (str "Post title missing from direct route: " id))
           (ensure (not (str/includes? (:body article) "medium.com"))
                   (str "Post page links back to Medium: " id)))
-        (doseq [{:keys [public-path]} images]
-          (let [image (request public-path {:as :bytes})]
-            (ensure (= 200 (:status image))
-                    (str "Localized image unavailable: " public-path))))))
+        (doseq [{:keys [public-path remote-url]} images]
+          (if public-path
+            (let [image (request public-path {:as :bytes})]
+              (ensure (= 200 (:status image))
+                      (str "Localized image unavailable: " public-path)))
+            (ensure (str/starts-with? remote-url "https://sns-img-qc.xhscdn.com/")
+                    (str "Invalid Rednote image URL: " remote-url))))))
+
+    (let [rednote-post (request "/posts/rednote-6abefbbd000000000f03a800" {})]
+      (ensure (= 200 (:status rednote-post)) "Rednote post did not return HTTP 200")
+      (ensure (str/includes? (:body rednote-post) "#johnburrows")
+              "Rednote post body is missing its description")
+      (ensure (str/includes? (:body rednote-post) "https://sns-img-qc.xhscdn.com/")
+              "Rednote post is missing remotely hosted images")
+      (ensure (= 14 (count (re-seq #"<figure>" (:body rednote-post))))
+              "Rednote post is missing images"))
 
     (let [post (request "/posts/1fbf49c8c32c" {})]
       (ensure (= 200 (:status post)) "Post did not return HTTP 200")
@@ -83,6 +98,6 @@
       (ensure (= 200 (:status image)) "Localized post image is unavailable")
       (ensure (= 404 (:status missing)) "Missing posts must return HTTP 404"))
 
-    (println "Smoke test passed: lazy index, 82 posts and archived media, Datastar SSE, and 404s")
+    (println "Smoke test passed: lazy index, 112 posts, mixed local/remote media, Datastar SSE, and 404s")
     (finally
       (process/destroy-tree server))))

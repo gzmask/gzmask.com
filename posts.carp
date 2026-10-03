@@ -6,7 +6,37 @@
   (sig all (Fn [] (Array PostMeta)))
   (defn all []
     [
+    (PostMeta.init @"rednote-6abefbbd000000000f03a800" @"秋天的感觉" @"October 1, 2026")
+    (PostMeta.init @"rednote-6a558eca0000000002003c00" @"四加二轮渡出行挪威小镇" @"July 13, 2026")
+    (PostMeta.init @"rednote-6a3645e6000000000e021800" @"最近在思考为什么要摩旅" @"June 20, 2026")
+    (PostMeta.init @"rednote-6a0112c1000000000f03ac00" @"在西北玩泥巴" @"May 10, 2026")
+    (PostMeta.init @"rednote-69eab3b50000000010001c00" @"几件旧家具" @"April 23, 2026")
+    (PostMeta.init @"rednote-69b8e9280000000023026e85" @"美西北调调" @"March 16, 2026")
+    (PostMeta.init @"rednote-69ae6996000000002801e703" @"竟然挂牌到加价成交就一个星期不到" @"March 8, 2026")
+    (PostMeta.init @"rednote-69ae6567000000001a025cbb" @"无法拒绝宜家stockholm系列的设计" @"March 8, 2026")
+    (PostMeta.init @"rednote-699c0a3a000000001a025bad" @"周末又淘了些旧家具，夜晚看着有感" @"February 23, 2026")
+    (PostMeta.init @"rednote-698f680d000000001d024ae0" @"diy翻新小浴室" @"February 13, 2026")
+    (PostMeta.init @"rednote-695b2ac0000000002202f1f6" @"不用去纽约，在SAM就看到了干草垛和睡莲" @"January 4, 2026")
+    (PostMeta.init @"rednote-692ddb22000000001b0324e3" @"火鸡节砍树" @"December 1, 2025")
+    (PostMeta.init @"rednote-69119014000000000300dcb7" @"初冬了" @"November 9, 2025")
+    (PostMeta.init @"rednote-69092e5400000000030356b6" @"难得有午后的太阳" @"November 3, 2025")
+    (PostMeta.init @"rednote-68edb8df000000000303a71f" @"autumn leaves, fallen moon" @"October 13, 2025")
+    (PostMeta.init @"rednote-68e93dac0000000003020fe3" @"mid-century modern goes with everything" @"October 10, 2025")
+    (PostMeta.init @"rednote-68e7469a0000000003034650" @"marketplace找到Russel Wright设计的柜子" @"October 8, 2025")
+    (PostMeta.init @"rednote-6850f529000000000303e226" @"John burrows house: wooden nest" @"June 16, 2025")
+    (PostMeta.init @"rednote-67eb94b5000000000d016c25" @"粗野派结局的一句话概括了h1b的人生" @"April 1, 2025")
+    (PostMeta.init @"rednote-67bac182000000000d01677f" @"打完蜡真的不会沾湿雪了" @"February 22, 2025")
     (PostMeta.init @"8b4c08992665" @"这是一个十年的blog post" @"February 13, 2025")
+    (PostMeta.init @"rednote-668cbb4a000000000a02756f" @"这次回国竟然还能试一下凯旋老虎" @"July 8, 2024")
+    (PostMeta.init @"rednote-66726bcc000000001c028172" @"连着住宅楼的地下工厂" @"June 18, 2024")
+    (PostMeta.init @"rednote-6668ec82000000001c02b748" @"rollei35s 2018 Bellevue 圣诞往事" @"June 11, 2024")
+    (PostMeta.init @"rednote-663f1e9e000000001e025506" @"西雅图的极光" @"May 11, 2024")
+    (PostMeta.init @"rednote-662fe237000000001e0392e7" @"哈雷运动者是一架绝世好车也是一架绝世坏车" @"April 29, 2024")
+    (PostMeta.init @"rednote-660a344f000000001b00b4dd" @"掌心里的汉堡人形诅咒" @"March 31, 2024")
+    (PostMeta.init @"rednote-65b7cd91000000000c006088" @"旅行是什么" @"January 29, 2024")
+    (PostMeta.init @"rednote-65112024000000001302f3f4" @"883一年小评" @"September 24, 2023")
+    (PostMeta.init @"rednote-64fe9d400000000013035dbc" @"补发一辑pax west" @"September 10, 2023")
+    (PostMeta.init @"rednote-604adb54000000000102f7e3" @"magic chair" @"March 11, 2021")
     (PostMeta.init @"1b2af4de6b10" @"离开加拿大回广州" @"November 19, 2016")
     (PostMeta.init @"1fbf49c8c32c" @"Why Clojure works" @"October 7, 2016")
     (PostMeta.init @"b4ed2729f28f" @"Random rant @ 2011.10.3" @"September 25, 2016")
@@ -91,7 +121,37 @@
 
   (defn title [id]
     (cond
+      (= id "rednote-6abefbbd000000000f03a800") @"秋天的感觉"
+      (= id "rednote-6a558eca0000000002003c00") @"四加二轮渡出行挪威小镇"
+      (= id "rednote-6a3645e6000000000e021800") @"最近在思考为什么要摩旅"
+      (= id "rednote-6a0112c1000000000f03ac00") @"在西北玩泥巴"
+      (= id "rednote-69eab3b50000000010001c00") @"几件旧家具"
+      (= id "rednote-69b8e9280000000023026e85") @"美西北调调"
+      (= id "rednote-69ae6996000000002801e703") @"竟然挂牌到加价成交就一个星期不到"
+      (= id "rednote-69ae6567000000001a025cbb") @"无法拒绝宜家stockholm系列的设计"
+      (= id "rednote-699c0a3a000000001a025bad") @"周末又淘了些旧家具，夜晚看着有感"
+      (= id "rednote-698f680d000000001d024ae0") @"diy翻新小浴室"
+      (= id "rednote-695b2ac0000000002202f1f6") @"不用去纽约，在SAM就看到了干草垛和睡莲"
+      (= id "rednote-692ddb22000000001b0324e3") @"火鸡节砍树"
+      (= id "rednote-69119014000000000300dcb7") @"初冬了"
+      (= id "rednote-69092e5400000000030356b6") @"难得有午后的太阳"
+      (= id "rednote-68edb8df000000000303a71f") @"autumn leaves, fallen moon"
+      (= id "rednote-68e93dac0000000003020fe3") @"mid-century modern goes with everything"
+      (= id "rednote-68e7469a0000000003034650") @"marketplace找到Russel Wright设计的柜子"
+      (= id "rednote-6850f529000000000303e226") @"John burrows house: wooden nest"
+      (= id "rednote-67eb94b5000000000d016c25") @"粗野派结局的一句话概括了h1b的人生"
+      (= id "rednote-67bac182000000000d01677f") @"打完蜡真的不会沾湿雪了"
       (= id "8b4c08992665") @"这是一个十年的blog post"
+      (= id "rednote-668cbb4a000000000a02756f") @"这次回国竟然还能试一下凯旋老虎"
+      (= id "rednote-66726bcc000000001c028172") @"连着住宅楼的地下工厂"
+      (= id "rednote-6668ec82000000001c02b748") @"rollei35s 2018 Bellevue 圣诞往事"
+      (= id "rednote-663f1e9e000000001e025506") @"西雅图的极光"
+      (= id "rednote-662fe237000000001e0392e7") @"哈雷运动者是一架绝世好车也是一架绝世坏车"
+      (= id "rednote-660a344f000000001b00b4dd") @"掌心里的汉堡人形诅咒"
+      (= id "rednote-65b7cd91000000000c006088") @"旅行是什么"
+      (= id "rednote-65112024000000001302f3f4") @"883一年小评"
+      (= id "rednote-64fe9d400000000013035dbc") @"补发一辑pax west"
+      (= id "rednote-604adb54000000000102f7e3") @"magic chair"
       (= id "1b2af4de6b10") @"离开加拿大回广州"
       (= id "1fbf49c8c32c") @"Why Clojure works"
       (= id "b4ed2729f28f") @"Random rant @ 2011.10.3"
@@ -177,7 +237,37 @@
 
   (defn published [id]
     (cond
+      (= id "rednote-6abefbbd000000000f03a800") @"October 1, 2026"
+      (= id "rednote-6a558eca0000000002003c00") @"July 13, 2026"
+      (= id "rednote-6a3645e6000000000e021800") @"June 20, 2026"
+      (= id "rednote-6a0112c1000000000f03ac00") @"May 10, 2026"
+      (= id "rednote-69eab3b50000000010001c00") @"April 23, 2026"
+      (= id "rednote-69b8e9280000000023026e85") @"March 16, 2026"
+      (= id "rednote-69ae6996000000002801e703") @"March 8, 2026"
+      (= id "rednote-69ae6567000000001a025cbb") @"March 8, 2026"
+      (= id "rednote-699c0a3a000000001a025bad") @"February 23, 2026"
+      (= id "rednote-698f680d000000001d024ae0") @"February 13, 2026"
+      (= id "rednote-695b2ac0000000002202f1f6") @"January 4, 2026"
+      (= id "rednote-692ddb22000000001b0324e3") @"December 1, 2025"
+      (= id "rednote-69119014000000000300dcb7") @"November 9, 2025"
+      (= id "rednote-69092e5400000000030356b6") @"November 3, 2025"
+      (= id "rednote-68edb8df000000000303a71f") @"October 13, 2025"
+      (= id "rednote-68e93dac0000000003020fe3") @"October 10, 2025"
+      (= id "rednote-68e7469a0000000003034650") @"October 8, 2025"
+      (= id "rednote-6850f529000000000303e226") @"June 16, 2025"
+      (= id "rednote-67eb94b5000000000d016c25") @"April 1, 2025"
+      (= id "rednote-67bac182000000000d01677f") @"February 22, 2025"
       (= id "8b4c08992665") @"February 13, 2025"
+      (= id "rednote-668cbb4a000000000a02756f") @"July 8, 2024"
+      (= id "rednote-66726bcc000000001c028172") @"June 18, 2024"
+      (= id "rednote-6668ec82000000001c02b748") @"June 11, 2024"
+      (= id "rednote-663f1e9e000000001e025506") @"May 11, 2024"
+      (= id "rednote-662fe237000000001e0392e7") @"April 29, 2024"
+      (= id "rednote-660a344f000000001b00b4dd") @"March 31, 2024"
+      (= id "rednote-65b7cd91000000000c006088") @"January 29, 2024"
+      (= id "rednote-65112024000000001302f3f4") @"September 24, 2023"
+      (= id "rednote-64fe9d400000000013035dbc") @"September 10, 2023"
+      (= id "rednote-604adb54000000000102f7e3") @"March 11, 2021"
       (= id "1b2af4de6b10") @"November 19, 2016"
       (= id "1fbf49c8c32c") @"October 7, 2016"
       (= id "b4ed2729f28f") @"September 25, 2016"

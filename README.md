@@ -2,7 +2,7 @@
 
 An experimental personal blog built with [Carp](https://github.com/carp-lang/Carp), [Datastar](https://data-star.dev/), and [`carpentry-org/web`](https://github.com/carpentry-org/web).
 
-The index sends only post metadata. Selecting a title asks the Carp backend for that one article, then Datastar morphs the `#experience` region with a View Transition. Article images are local, lazy-loaded assets and are not requested until their article is opened.
+The index sends only post metadata. Selecting a title asks the Carp backend for that one article, then Datastar morphs the `#experience` region with a View Transition. Article images are lazy-loaded and are not requested until their article is opened. Medium and WordPress images are archived locally; Rednote images remain on Rednote's CDN.
 
 ## Architecture
 
@@ -19,7 +19,10 @@ Direct GET /posts/:id
   -> complete server-rendered HTML document
 
 GET /media/*
-  -> locally archived post image, loaded lazily by the browser
+  -> locally archived Medium/WordPress image
+
+Rednote article image
+  -> loaded directly from sns-img-qc.xhscdn.com
 ```
 
 This follows the Tao of Datastar where practical:
@@ -77,9 +80,10 @@ make test
 The smoke test verifies:
 
 - The index contains all titles but no article bodies or media URLs
-- All 82 direct article URLs render complete documents
+- All 112 direct article URLs render complete documents
 - Datastar requests return correctly framed SSE patches
-- All 27 recoverable article images are served locally
+- All 27 recoverable Medium/WordPress images are served locally
+- All 30 non-video Rednote posts reference their 205 images on Rednote's CDN
 - Unknown post IDs return HTTP 404
 
 ## Import archived posts
@@ -88,17 +92,17 @@ The smoke test verifies:
 make import
 ```
 
-`scripts/import-archive.bb` reads the Medium RSS feed and the WordPress.com API for `gzmask`, then:
+`scripts/import-archive.bb` reads the Medium RSS feed, the WordPress.com API for `gzmask`, and the checked-in Rednote snapshot at `content/rednote-posts.json`. It then:
 
-1. Imports the ten Medium posts and all non-duplicate WordPress posts (82 total).
+1. Imports the ten Medium posts, all non-duplicate WordPress posts, and 30 non-video Rednote posts (112 total).
 2. Writes each article body to a separate `content/posts/:id.html` file.
-3. Downloads every recoverable article image to `public/media/`.
-4. Replaces images that have disappeared from their original hosts with an archive-unavailable marker.
-5. Adds native lazy-loading attributes to images.
+3. Downloads every recoverable Medium and WordPress image to `public/media/`.
+4. Keeps Rednote images hosted by Rednote, using stable CDN object paths and native lazy loading.
+5. Replaces legacy images that have disappeared from their original hosts with an archive-unavailable marker.
 6. Generates `content/posts.json` for inspection.
 7. Generates the Carp metadata module `posts.carp`.
 
-Article bodies and images are intentionally absent from the initial page. The import is a build/content-management task; the production server does not depend on Medium or WordPress at request time.
+Article bodies and images are intentionally absent from the initial page. The Rednote snapshot contains post text and stable image object paths, not image binaries or temporary access tokens. The import is a build/content-management task; the production server only contacts Rednote when a reader opens a Rednote article and its images load.
 
 ## Build
 
