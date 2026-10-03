@@ -20,7 +20,7 @@ test: check release
 	bb scripts/smoke-test.bb
 
 import:
-	bb import-medium
+	bb import-archive
 
 clean:
 	rm -rf out

@@ -264,6 +264,20 @@ footer {
   text-align: center;
 }
 
+.post-body iframe,
+.post-body table {
+  max-width: 100%;
+}
+
+.missing-media {
+  display: inline-block;
+  margin: 0.5rem 0;
+  color: var(--muted);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-style: italic;
+}
+
 .post-body pre,
 .post-body code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;

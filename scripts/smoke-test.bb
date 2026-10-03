@@ -41,7 +41,9 @@
               "Index eagerly included post media"))
 
     (let [posts (json/parse-string (slurp "content/posts.json") true)]
-      (ensure (= 10 (count posts)) "Expected the imported ten-post archive")
+      (ensure (= 82 (count posts)) "Expected the complete 82-post archive")
+      (ensure (= 72 (count (filter #(= "wordpress" (:source %)) posts)))
+              "Expected all 72 non-duplicate WordPress posts")
       (doseq [{:keys [id title images]} posts]
         (let [article (request (str "/posts/" id) {})]
           (ensure (= 200 (:status article)) (str "Post route failed: " id))
@@ -58,6 +60,11 @@
       (ensure (= 200 (:status post)) "Post did not return HTTP 200")
       (ensure (str/includes? (:body post) "biggest functional programming advocate")
               "Post body was not loaded"))
+
+    (let [wordpress-post (request "/posts/wp-49" {})]
+      (ensure (= 200 (:status wordpress-post)) "Oldest WordPress post did not return HTTP 200")
+      (ensure (str/includes? (:body wordpress-post) "domain registration catch program")
+              "Oldest WordPress post body was not loaded"))
 
     (let [sse (request "/posts/841f41dc2430"
                        {:headers {"Accept" "text/event-stream"
@@ -76,6 +83,6 @@
       (ensure (= 200 (:status image)) "Localized post image is unavailable")
       (ensure (= 404 (:status missing)) "Missing posts must return HTTP 404"))
 
-    (println "Smoke test passed: lazy index, all posts and media, Datastar SSE, and 404s")
+    (println "Smoke test passed: lazy index, 82 posts and archived media, Datastar SSE, and 404s")
     (finally
       (process/destroy-tree server))))

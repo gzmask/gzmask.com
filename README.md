@@ -77,26 +77,28 @@ make test
 The smoke test verifies:
 
 - The index contains all titles but no article bodies or media URLs
-- All ten direct article URLs render complete documents
+- All 82 direct article URLs render complete documents
 - Datastar requests return correctly framed SSE patches
-- All 18 localized images are served
+- All 27 recoverable article images are served locally
 - Unknown post IDs return HTTP 404
 
-## Import Medium posts
+## Import archived posts
 
 ```sh
 make import
 ```
 
-`scripts/import-medium.bb` reads `https://medium.com/feed/@gzmask`, then:
+`scripts/import-archive.bb` reads the Medium RSS feed and the WordPress.com API for `gzmask`, then:
 
-1. Writes each article body to a separate `content/posts/:id.html` file.
-2. Downloads article images to `public/media/`.
-3. Adds native lazy-loading attributes to images.
-4. Generates `content/posts.json` for inspection.
-5. Generates the Carp metadata module `posts.carp`.
+1. Imports the ten Medium posts and all non-duplicate WordPress posts (82 total).
+2. Writes each article body to a separate `content/posts/:id.html` file.
+3. Downloads every recoverable article image to `public/media/`.
+4. Replaces images that have disappeared from their original hosts with an archive-unavailable marker.
+5. Adds native lazy-loading attributes to images.
+6. Generates `content/posts.json` for inspection.
+7. Generates the Carp metadata module `posts.carp`.
 
-Article bodies and images are intentionally absent from the initial page. The import is a build/content-management task; the production server does not depend on Medium at request time.
+Article bodies and images are intentionally absent from the initial page. The import is a build/content-management task; the production server does not depend on Medium or WordPress at request time.
 
 ## Build
 

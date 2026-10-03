@@ -37,7 +37,7 @@
     (let [items (String.concat &links)]
       (String.concat
         &[@"<main id='experience' class='index-mode' data-signals:loading='false'>"
-          @"<section class='intro'><p class='kicker'>A personal archive · 2011—now</p>"
+          @"<section class='intro'><p class='kicker'>A personal archive · 2006—now</p>"
           @"<h1>Notes from the long way around.</h1>"
           @"<p class='lede'>Software, cities, cameras, games, parenthood—and the years between.</p></section>"
           @"<nav class='post-index' aria-label='Writing archive'><ol>"
