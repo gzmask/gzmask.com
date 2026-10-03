@@ -39,7 +39,9 @@
       (ensure (not (str/includes? index-body "biggest functional programming advocate"))
               "Index eagerly included a post body")
       (ensure (not (str/includes? index-body "/media/"))
-              "Index eagerly included post media"))
+              "Index eagerly included post media")
+      (ensure (str/includes? index-body "/navigation.js")
+              "Index is missing client-side scroll restoration"))
 
     (let [posts (json/parse-string (slurp "content/posts.json") true)]
       (ensure (= 112 (count posts)) "Expected the complete 112-post archive")
@@ -61,6 +63,11 @@
                       (str "Localized image unavailable: " public-path)))
             (ensure (str/starts-with? remote-url "https://sns-img-qc.xhscdn.com/")
                     (str "Invalid Rednote image URL: " remote-url))))))
+
+    (let [navigation (request "/navigation.js" {})]
+      (ensure (= 200 (:status navigation)) "Navigation script did not return HTTP 200")
+      (ensure (str/includes? (:body navigation) "gzmaskArchiveScrollY")
+              "Navigation script does not retain the archive scroll position"))
 
     (let [rednote-post (request "/posts/rednote-6abefbbd000000000f03a800" {})]
       (ensure (= 200 (:status rednote-post)) "Rednote post did not return HTTP 200")

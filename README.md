@@ -33,7 +33,7 @@ This follows the Tao of Datastar where practical:
 - Signals are used only for the loading indicator.
 - Every article remains a real URL and works without JavaScript.
 
-The enhanced navigation uses `history.pushState` so morphs remain addressable. This is a deliberate compromise with Datastar's recommendation to leave page history entirely to ordinary anchor navigation; the links remain progressively enhanced and work as normal links when JavaScript is unavailable.
+The enhanced navigation uses `history.pushState` so morphs remain addressable. This is a deliberate compromise with Datastar's recommendation to leave page history entirely to ordinary anchor navigation; the links remain progressively enhanced and work as normal links when JavaScript is unavailable. For this in-place navigation, the browser stores each route's scroll position in that history entry and restores it after the Datastar patch. This is client-side navigation state; the server has no session mechanism.
 
 ## Requirements
 
