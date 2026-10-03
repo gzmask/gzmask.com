@@ -1,0 +1,125 @@
+(load "git@github.com:carpentry-org/web@0.12.0")
+(load "posts.carp")
+(load "datastar.carp")
+
+(Project.config "title" "persona-blog")
+
+(defn page-title [title]
+  (String.concat &[@"<title id='page-title'>" @title @" · gzmask</title>"]))
+
+(defn datastar-link [url label]
+  (String.concat
+    &[@"<a href='"
+      @url
+      @"' data-indicator:loading data-on:click=\"evt.preventDefault(); @get(el.href); history.pushState({}, '', el.href)\">"
+      @label
+      @"</a>"]))
+
+(defn render-post-link [post index]
+  (String.concat
+    &[@"<li style='--order:"
+      (Int.str index)
+      @"'><span class='post-number'>"
+      (Int.str (+ index 1))
+      @"</span><div><h2>"
+      (datastar-link
+        &(String.concat &[@"/posts/" @(PostMeta.id post)])
+        (PostMeta.title post))
+      @"</h2><time>"
+      @(PostMeta.published post)
+      @"</time></div></li>"]))
+
+(defn render-index-main []
+  (let-do [posts (Posts.all)
+           links (the (Array String) [])]
+    (for [i 0 (Array.length &posts)]
+      (Array.push-back! &links (render-post-link (Array.unsafe-nth &posts i) i)))
+    (let [items (String.concat &links)]
+      (String.concat
+        &[@"<main id='experience' class='index-mode' data-signals:loading='false'>"
+          @"<section class='intro'><p class='kicker'>A personal archive · 2011—now</p>"
+          @"<h1>Notes from the long way around.</h1>"
+          @"<p class='lede'>Software, cities, cameras, games, parenthood—and the years between.</p></section>"
+          @"<nav class='post-index' aria-label='Writing archive'><ol>"
+          items
+          @"</ol></nav><span class='loading-indicator' data-show='$loading'>retrieving memory…</span>"
+          @"</main>"]))))
+
+(defn render-article-main [title published body]
+  (String.concat
+    &[@"<main id='experience' class='post-mode' data-signals:loading='false'>"
+      @"<article class='post'><header class='post-header'><p class='kicker'>From the archive</p><h1>"
+      @title
+      @"</h1><div class='post-meta'><time>"
+      @published
+      @"</time></div></header><div class='post-body'>"
+      @body
+      @"</div></article>"
+      @"<a class='archive-orb' href='/' aria-label='Return to the writing archive' data-indicator:loading data-on:click=\"evt.preventDefault(); @get('/'); history.pushState({}, '', '/')\"><span></span><span></span><span></span><b>Archive</b></a>"
+      @"<span class='loading-indicator' data-show='$loading'>retrieving memory…</span></main>"]))
+
+(defn document [title main-content]
+  (String.concat
+    &[@"<!doctype html><html lang='en'><head><meta charset='utf-8'>"
+      @"<meta name='viewport' content='width=device-width,initial-scale=1'>"
+      @"<meta name='description' content='A personal archive by gzmask.'>"
+      (page-title title)
+      @"<link rel='stylesheet' href='/styles.css'>"
+      @"<script type='module' src='/datastar.js'></script></head>"
+      @"<body data-on:popstate__window=\"@get(window.location.pathname)\">"
+      @"<header class='site-header'><a href='/' class='identity'>gzmask<span>/ archive</span></a><span class='coordinates'>47.6° N · 122.3° W</span></header>"
+      @main-content
+      @"<footer><span>Built with Carp + Datastar</span><span>Seattle, WA</span></footer>"
+      @"</body></html>"]))
+
+(defn datastar-request? [req]
+  (match (Request.header req "Datastar-Request")
+    (Maybe.Just value) (= &(String.ascii-to-lower &value) "true")
+    (Maybe.Nothing) false))
+
+(sig index-handler (Fn [&Request &(Map String String)] Response))
+(defn index-handler [req -params]
+  (let [main-content (render-index-main)]
+    (if (datastar-request? req)
+      (Datastar.response &(String.concat &[(page-title "Writing") main-content]))
+      (Response.html (document "Writing" &main-content)))))
+
+(defn not-found-main []
+  @"<main id='experience' class='post-mode'><article class='post'><header class='post-header'><p class='kicker'>404</p><h1>This memory has wandered off.</h1></header></article><a class='archive-orb' href='/' aria-label='Return to the writing archive'><span></span><span></span><span></span><b>Archive</b></a></main>")
+
+(defn not-found-response [is-datastar]
+  (let [main-content (not-found-main)]
+    (if is-datastar
+      (Datastar.response &(String.concat &[(page-title "Not found") main-content]))
+      (Response.with-status
+        (Response.html (document "Not found" &main-content))
+        404
+        @"Not Found"))))
+
+(sig found-post-response (Fn [Bool String String String] Response))
+(defn found-post-response [is-datastar id title published]
+  (let [path (String.concat &[@"content/posts/" @&id @".html"])
+        body (IO.unsafe-read-file &path)
+        main-content (render-article-main &title &published &body)]
+    (if is-datastar
+      (Datastar.response &(String.concat &[(page-title &title) main-content]))
+      (Response.html (document &title &main-content)))))
+
+(sig post-handler (Fn [&Request &(Map String String)] Response))
+(defn post-handler [req params]
+  (let [is-datastar (datastar-request? req)
+        id (Map.get params "id")]
+    (if (Posts.exists? &id)
+      (let [title (Posts.title &id)
+            published (Posts.published &id)]
+        (found-post-response is-datastar id title published))
+      (not-found-response is-datastar))))
+
+(defn health-handler [-req -params]
+  (Response.text @"ok"))
+
+(defserver "0.0.0.0" 8080
+  (GET "/health" health-handler)
+  (GET "/" index-handler)
+  (GET "/posts/:id" post-handler)
+  (static "public"))

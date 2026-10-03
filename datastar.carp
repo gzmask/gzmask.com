@@ -1,0 +1,17 @@
+(defmodule Datastar
+  (doc patch-elements "Formats a Datastar patch-elements SSE event.")
+  (sig patch-elements (Fn [(Ref String)] String))
+  (defn patch-elements [html]
+    (SSE.event
+      "datastar-patch-elements"
+      &(String.concat &[@"useViewTransition true\n" @"elements " @html])))
+
+  (doc response "Wraps a patch-elements event in a finite SSE response.")
+  (sig response (Fn [(Ref String)] Response))
+  (defn response [html]
+    (let [event (patch-elements html)
+          response (Response.chunked 200 @"text/event-stream" &[event])]
+      (Response.with-header
+        (Response.with-header response @"Cache-Control" @"no-cache")
+        @"Vary"
+        @"Datastar-Request"))))

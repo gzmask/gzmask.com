@@ -1,0 +1,3 @@
+{:deps {org.clojure/data.xml {:mvn/version "0.2.0-alpha9"}}
+ :tasks {import-medium {:doc "Import the Medium RSS archive and localize its images"
+                        :task (load-file "scripts/import-medium.bb")}}}
