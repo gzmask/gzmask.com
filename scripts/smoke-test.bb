@@ -34,6 +34,8 @@
     (let [index (request "/" {})
           index-body (:body index)]
       (ensure (= 200 (:status index)) "Index did not return HTTP 200")
+      (ensure (str/includes? index-body "寻羊，西部世界第二配曲，先锋CS-77和Ikea stockholm 媒体柜")
+              "Index is missing the first-party post title")
       (ensure (str/includes? index-body "Why Clojure works")
               "Index is missing a post title")
       (ensure (not (str/includes? index-body "biggest functional programming advocate"))
@@ -44,11 +46,13 @@
               "Index is missing client-side scroll restoration"))
 
     (let [posts (json/parse-string (slurp "content/posts.json") true)]
-      (ensure (= 112 (count posts)) "Expected the complete 112-post archive")
+      (ensure (= 113 (count posts)) "Expected the complete 113-post archive")
       (ensure (= 72 (count (filter #(= "wordpress" (:source %)) posts)))
               "Expected all 72 non-duplicate WordPress posts")
       (ensure (= 30 (count (filter #(= "rednote" (:source %)) posts)))
               "Expected all 30 non-video Rednote posts")
+      (ensure (= 1 (count (filter #(= "local" (:source %)) posts)))
+              "Expected the first-party post")
       (doseq [{:keys [id title images]} posts]
         (let [article (request (str "/posts/" id) {})]
           (ensure (= 200 (:status article)) (str "Post route failed: " id))
@@ -78,6 +82,16 @@
       (ensure (= 14 (count (re-seq #"<figure>" (:body rednote-post))))
               "Rednote post is missing images"))
 
+    (let [local-post (request "/posts/20261012-sheep-cs77"
+                              {:headers {"Accept" "text/event-stream"
+                                         "Datastar-Request" "true"}})
+          body (:body local-post)]
+      (ensure (= 200 (:status local-post)) "First-party Datastar post did not return HTTP 200")
+      (ensure (= 4 (count (re-seq #"<figure>" body)))
+              "First-party Datastar post is missing images")
+      (ensure (not (re-find #"(?m)^data: <(?:p|figure)" body))
+              "First-party paragraphs and figures must not be split across SSE data lines"))
+
     (let [post (request "/posts/1fbf49c8c32c" {})]
       (ensure (= 200 (:status post)) "Post did not return HTTP 200")
       (ensure (str/includes? (:body post) "biggest functional programming advocate")
@@ -105,6 +119,6 @@
       (ensure (= 200 (:status image)) "Localized post image is unavailable")
       (ensure (= 404 (:status missing)) "Missing posts must return HTTP 404"))
 
-    (println "Smoke test passed: lazy index, 112 posts, mixed local/remote media, Datastar SSE, and 404s")
+    (println "Smoke test passed: lazy index, 113 posts, mixed local/remote media, Datastar SSE, and 404s")
     (finally
       (process/destroy-tree server))))

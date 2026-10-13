@@ -6,6 +6,7 @@
   (sig all (Fn [] (Array PostMeta)))
   (defn all []
     [
+    (PostMeta.init @"20261012-sheep-cs77" @"寻羊，西部世界第二配曲，先锋CS-77和Ikea stockholm 媒体柜" @"October 12, 2026")
     (PostMeta.init @"rednote-6abefbbd000000000f03a800" @"秋天的感觉" @"October 1, 2026")
     (PostMeta.init @"rednote-6a558eca0000000002003c00" @"四加二轮渡出行挪威小镇" @"July 13, 2026")
     (PostMeta.init @"rednote-6a3645e6000000000e021800" @"最近在思考为什么要摩旅" @"June 20, 2026")
@@ -121,6 +122,7 @@
 
   (defn title [id]
     (cond
+      (= id "20261012-sheep-cs77") @"寻羊，西部世界第二配曲，先锋CS-77和Ikea stockholm 媒体柜"
       (= id "rednote-6abefbbd000000000f03a800") @"秋天的感觉"
       (= id "rednote-6a558eca0000000002003c00") @"四加二轮渡出行挪威小镇"
       (= id "rednote-6a3645e6000000000e021800") @"最近在思考为什么要摩旅"
@@ -237,6 +239,7 @@
 
   (defn published [id]
     (cond
+      (= id "20261012-sheep-cs77") @"October 12, 2026"
       (= id "rednote-6abefbbd000000000f03a800") @"October 1, 2026"
       (= id "rednote-6a558eca0000000002003c00") @"July 13, 2026"
       (= id "rednote-6a3645e6000000000e021800") @"June 20, 2026"

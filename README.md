@@ -80,9 +80,9 @@ make test
 The smoke test verifies:
 
 - The index contains all titles but no article bodies or media URLs
-- All 112 direct article URLs render complete documents
+- All 113 direct article URLs render complete documents
 - Datastar requests return correctly framed SSE patches
-- All 27 recoverable Medium/WordPress images are served locally
+- All recoverable Medium/WordPress images and all four first-party images are served locally
 - All 30 non-video Rednote posts reference their 205 images on Rednote's CDN
 - Unknown post IDs return HTTP 404
 
@@ -94,12 +94,12 @@ make import
 
 `scripts/import-archive.bb` reads the Medium RSS feed, the WordPress.com API for `gzmask`, and the checked-in Rednote snapshot at `content/rednote-posts.json`. It then:
 
-1. Imports the ten Medium posts, all non-duplicate WordPress posts, and 30 non-video Rednote posts (112 total).
-2. Writes each article body to a separate `content/posts/:id.html` file.
+1. Imports the ten Medium posts, all non-duplicate WordPress posts, and 30 non-video Rednote posts, while preserving first-party posts listed in `content/local-posts.json` (113 total currently).
+2. Writes each imported article body to a separate `content/posts/:id.html` file. First-party post bodies are authored there directly.
 3. Downloads every recoverable Medium and WordPress image to `public/media/`.
 4. Keeps Rednote images hosted by Rednote, using stable CDN object paths and native lazy loading.
 5. Replaces legacy images that have disappeared from their original hosts with an archive-unavailable marker.
-6. Generates `content/posts.json` for inspection.
+6. Generates `content/posts.json` for inspection, including first-party posts.
 7. Generates the Carp metadata module `posts.carp`.
 
 Article bodies and images are intentionally absent from the initial page. The Rednote snapshot contains post text and stable image object paths, not image binaries or temporary access tokens. The import is a build/content-management task; the production server only contacts Rednote when a reader opens a Rednote article and its images load.

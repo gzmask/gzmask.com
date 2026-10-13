@@ -18,6 +18,7 @@
 (def media-directory "public/media")
 (def metadata-path "content/posts.json")
 (def rednote-metadata-path "content/rednote-posts.json")
+(def local-posts-path "content/local-posts.json")
 (def rednote-image-base-url "https://sns-img-qc.xhscdn.com/")
 (def carp-index-path "posts.carp")
 
@@ -267,6 +268,13 @@
   (mapv parse-rednote-post
         (json/parse-string (slurp rednote-metadata-path) true)))
 
+(defn parse-local-posts []
+  (mapv (fn [post]
+          (assoc post :html (-> (slurp (str posts-directory "/" (:id post) ".html"))
+                                (str/replace #"[\r\n]+" " ")
+                                str/trim)))
+        (json/parse-string (slurp local-posts-path) true)))
+
 (defn carp-string [value]
   (str "@\""
        (-> value
@@ -312,7 +320,8 @@
         wordpress-posts (parse-wordpress-posts (fetch-text wordpress-api-url)
                                                medium-posts)
         rednote-posts (parse-rednote-posts)
-        posts (->> (concat medium-posts wordpress-posts rednote-posts)
+        local-posts (parse-local-posts)
+        posts (->> (concat medium-posts wordpress-posts rednote-posts local-posts)
                    (sort-by (comp - sort-key :published-raw))
                    vec)]
     (doseq [{:keys [id html]} posts]
@@ -320,12 +329,13 @@
     (spit metadata-path
           (json/generate-string (mapv #(dissoc % :html) posts) {:pretty true}))
     (write-carp-index! posts)
-    (println (format (str "Imported %d posts (%d Medium, %d WordPress, %d Rednote), "
-                          "%d local images and %d remote images")
+    (println (format (str "Imported %d posts (%d Medium, %d WordPress, %d Rednote, "
+                          "%d first-party), %d local images and %d remote images")
                      (count posts)
                      (count medium-posts)
                      (count wordpress-posts)
                      (count rednote-posts)
+                     (count local-posts)
                      (reduce + (map #(if (= "rednote" (:source %))
                                        0
                                        (count (:images %)))
