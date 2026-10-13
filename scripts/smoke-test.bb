@@ -64,12 +64,18 @@
       (ensure (= 1 (count (filter #(= "local" (:source %)) posts)))
               "Expected the first-party post")
       (doseq [{:keys [id title images]} posts]
+        ;; Datastar reads `elements` from one SSE data line; a newline in a
+        ;; fragment silently drops everything after it from the DOM patch.
+        (ensure (not (re-find #"[\r\n]" (slurp (str "content/posts/" id ".html"))))
+                (str "Post HTML must be a single line for Datastar: " id))
         (let [article (request (str "/posts/" id) {})]
           (ensure (= 200 (:status article)) (str "Post route failed: " id))
           (ensure (str/includes? (:body article) title)
                   (str "Post title missing from direct route: " id))
           (ensure (not (str/includes? (:body article) "medium.com"))
-                  (str "Post page links back to Medium: " id)))
+                  (str "Post page links back to Medium: " id))
+          (ensure (= 1 (count (re-seq #"class='archive-orb'" (:body article))))
+                  (str "Post must have exactly one round Archive control: " id)))
         (doseq [{:keys [public-path remote-url]} images]
           (if public-path
             (let [image (request public-path {:as :bytes})]
@@ -97,10 +103,16 @@
     (let [local-post (request "/posts/20261012-sheep-cs77"
                               {:headers {"Accept" "text/event-stream"
                                          "Datastar-Request" "true"}})
-          body (:body local-post)]
+          body (:body local-post)
+          elements-line (first (filter #(str/starts-with? % "data: elements ")
+                                       (str/split-lines body)))]
       (ensure (= 200 (:status local-post)) "First-party Datastar post did not return HTTP 200")
       (ensure (= 4 (count (re-seq #"<figure>" body)))
               "First-party Datastar post is missing images")
+      (ensure (and elements-line
+                   (str/includes? elements-line "class='archive-orb'")
+                   (str/includes? elements-line "</main>"))
+              "First-party Datastar patch must contain the complete article and round Archive control")
       (ensure (not (re-find #"(?m)^data: <(?:p|figure)" body))
               "First-party paragraphs and figures must not be split across SSE data lines"))
 
