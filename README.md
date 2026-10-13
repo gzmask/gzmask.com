@@ -33,7 +33,7 @@ This follows the Tao of Datastar where practical:
 - Signals are used only for the loading indicator.
 - Every article remains a real URL and works without JavaScript.
 
-The enhanced navigation uses `history.pushState` so morphs remain addressable. This is a deliberate compromise with Datastar's recommendation to leave page history entirely to ordinary anchor navigation; the links remain progressively enhanced and work as normal links when JavaScript is unavailable. For this in-place navigation, the browser stores each route's scroll position in that history entry and restores it after the Datastar patch. This is client-side navigation state; the server has no session mechanism.
+The enhanced navigation uses `history.pushState` so morphs remain addressable. This is a deliberate compromise with Datastar's recommendation to leave page history entirely to ordinary anchor navigation; the links remain progressively enhanced and work as normal links when JavaScript is unavailable. For this in-place navigation, the browser stores each route's scroll position in that history entry and restores it after the Datastar patch. The visitor counter is incremented by the server for each page route request and persisted as a plain-text count file; it counts page views, not unique people.
 
 ## Requirements
 
@@ -117,12 +117,13 @@ The executable is `out/persona-blog`.
 
 ## Fly.io
 
-`Dockerfile` performs a reproducible Linux build using a pinned reference Carp commit. `fly.toml` follows the deployment shape of `niarv.com` but does not require a volume.
+`Dockerfile` performs a reproducible Linux build using a pinned reference Carp commit. `fly.toml` mounts a persistent Fly volume at `/data` for the server-side visitor count. The app runs one machine because Fly volumes are attached to a single machine.
 
-The configured app name is `gzmask-persona-blog`. Change it if that Fly.io name is unavailable, then deploy:
+The configured app name is `gzmask-persona-blog`. Change it if that Fly.io name is unavailable, then create the app and volume once before deploying:
 
 ```sh
 fly apps create gzmask-persona-blog   # once
+fly volumes create visitor_data --region sjc --size 1 -a gzmask-persona-blog  # once
 fly deploy --ha=false
 ```
 

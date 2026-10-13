@@ -5,9 +5,15 @@
   (:require [babashka.http-client :as http]
             [babashka.process :as process]
             [cheshire.core :as json]
+            [clojure.java.io :as io]
             [clojure.string :as str]))
 
 (def base-url "http://127.0.0.1:8080")
+(def visitor-counter-file "visitor-count.txt")
+
+(defn start-server []
+  (process/process ["./out/persona-blog"]
+                   {:out :inherit :err :inherit}))
 
 (defn request [path options]
   (http/get (str base-url path) (merge {:throw false} options)))
@@ -27,8 +33,8 @@
   (when-not condition
     (throw (ex-info message {}))))
 
-(let [server (process/process ["./out/persona-blog"]
-                              {:out :inherit :err :inherit})]
+(io/delete-file visitor-counter-file true)
+(let [server (atom (start-server))]
   (try
     (wait-until-ready)
     (let [index (request "/" {})
@@ -43,7 +49,11 @@
       (ensure (not (str/includes? index-body "/media/"))
               "Index eagerly included post media")
       (ensure (str/includes? index-body "/navigation.js")
-              "Index is missing client-side scroll restoration"))
+              "Index is missing client-side scroll restoration")
+      (ensure (str/includes? index-body "SITE VISITS")
+              "Index is missing the visitor counter")
+      (ensure (str/includes? index-body "<output id='visitor-count'>1</output>")
+              "First server-rendered page view should be visitor count 1"))
 
     (let [posts (json/parse-string (slurp "content/posts.json") true)]
       (ensure (= 113 (count posts)) "Expected the complete 113-post archive")
@@ -71,7 +81,9 @@
     (let [navigation (request "/navigation.js" {})]
       (ensure (= 200 (:status navigation)) "Navigation script did not return HTTP 200")
       (ensure (str/includes? (:body navigation) "gzmaskArchiveScrollY")
-              "Navigation script does not retain the archive scroll position"))
+              "Navigation script does not retain the archive scroll position")
+      (ensure (not (str/includes? (:body navigation) "localStorage"))
+              "Visitor count must not be stored in the browser"))
 
     (let [rednote-post (request "/posts/rednote-6abefbbd000000000f03a800" {})]
       (ensure (= 200 (:status rednote-post)) "Rednote post did not return HTTP 200")
@@ -112,13 +124,26 @@
       (ensure (str/includes? body "data: useViewTransition true\n")
               "Datastar response does not enable view transitions")
       (ensure (str/includes? body "成都两日")
-              "Datastar response is missing post content"))
+              "Datastar response is missing post content")
+      (ensure (str/includes? body "id='visitor-count'")
+              "Datastar response is missing the updated server-side count"))
 
     (let [image (request "/media/841f41dc2430-01.jpg" {:as :bytes})
           missing (request "/posts/not-a-post" {})]
       (ensure (= 200 (:status image)) "Localized post image is unavailable")
       (ensure (= 404 (:status missing)) "Missing posts must return HTTP 404"))
 
-    (println "Smoke test passed: lazy index, 113 posts, mixed local/remote media, Datastar SSE, and 404s")
+    (let [count-before-restart (Long/parseLong (slurp visitor-counter-file))]
+      (process/destroy-tree @server)
+      (reset! server (start-server))
+      (wait-until-ready)
+      (let [restarted-index (request "/" {})
+            expected-count (inc count-before-restart)]
+        (ensure (str/includes? (:body restarted-index)
+                               (str "<output id='visitor-count'>" expected-count "</output>"))
+                "Visitor count did not persist across a server restart")))
+
+    (println "Smoke test passed: server-side file-persisted counter, 113 posts, media, Datastar SSE, and 404s")
     (finally
-      (process/destroy-tree server))))
+      (process/destroy-tree @server)
+      (io/delete-file visitor-counter-file true))))

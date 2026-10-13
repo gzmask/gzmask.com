@@ -352,6 +352,32 @@ footer {
   border-top: 1px solid var(--line);
 }
 
+.visitor-counter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--ink);
+  font-family: "Century Gothic", "Avant Garde", Futura, sans-serif;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.visitor-counter-label {
+  color: var(--accent);
+}
+
+.visitor-counter output {
+  min-width: 4.5rem;
+  padding: 0.3rem 0.45rem;
+  border: 1px solid var(--ink);
+  background: var(--paper-deep);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.12em;
+  text-align: center;
+}
+
 @keyframes rise {
   from { opacity: 0; transform: translateY(0.8rem); }
   to { opacity: 1; transform: translateY(0); }
@@ -376,6 +402,12 @@ footer {
 @media (max-width: 760px) {
   .coordinates {
     display: none;
+  }
+
+  footer {
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    padding-block: 1rem;
   }
 
   .index-mode {

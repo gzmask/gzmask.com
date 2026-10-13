@@ -7,6 +7,35 @@
 (defn page-title [title]
   (String.concat &[@"<title id='page-title'>" @title @" · gzmask</title>"]))
 
+(defn stored-visitor-count []
+  (match (IO.read-file "visitor-count.txt")
+    (Result.Success contents)
+      (match (Int.from-string &contents)
+        (Maybe.Just count) (if (> count 0) count 0)
+        (Maybe.Nothing) 0)
+    (Result.Error _) 0))
+
+(sig record-visit (Fn [] (Result Int String)))
+(defn record-visit []
+  (let [count (+ (stored-visitor-count) 1)
+        content (Int.str count)]
+    (match (IO.write-file &content "visitor-count.txt")
+      (Result.Success _) (Result.Success count)
+      (Result.Error error) (Result.Error error))))
+
+(defn visitor-count-output [count]
+  (String.concat &[@"<output id='visitor-count'>"
+                   (Int.str count)
+                   @"</output>"]))
+
+(defn visitor-count-error [error]
+  (do
+    (IO.errorln &(fmt "Could not persist visitor count: %s" error))
+    (Response.with-status
+      (Response.text @"Visitor counter unavailable")
+      500
+      @"Internal Server Error")))
+
 (defn datastar-link [url label]
   (String.concat
     &[@"<a href='"
@@ -58,7 +87,7 @@
       @"<a class='archive-orb' href='/' aria-label='Return to the writing archive' data-indicator:loading data-on:click=\"evt.preventDefault(); if (!window.archiveNavigation.backToArchive()) { window.archiveNavigation.restoreAfterNextFetch(0); history.pushState({gzmaskScrollY: 0}, '', '/'); @get('/') }\"><span></span><span></span><span></span><b>Archive</b></a>"
       @"<span class='loading-indicator' data-show='$loading'>retrieving memory…</span></main>"]))
 
-(defn document [title main-content]
+(defn document [title main-content visitor-count]
   (String.concat
     &[@"<!doctype html><html lang='en'><head><meta charset='utf-8'>"
       @"<meta name='viewport' content='width=device-width,initial-scale=1'>"
@@ -69,7 +98,9 @@
       @"<body data-on:popstate__window=\"window.archiveNavigation.handlePopState(); @get(window.location.pathname)\">"
       @"<header class='site-header'><a href='/' class='identity'>gzmask<span>/ archive</span></a><span class='coordinates'>47.6° N · 122.3° W</span></header>"
       @main-content
-      @"<footer><span>Built with Carp + Datastar</span><span>Seattle, WA</span></footer>"
+      @"<footer><span>Built with Carp + Datastar</span><span class='visitor-counter' title='Server-side page views'><span class='visitor-counter-label'>SITE VISITS</span>"
+      (visitor-count-output visitor-count)
+      @"</span><span>Seattle, WA</span></footer>"
       @"</body></html>"]))
 
 (defn datastar-request? [req]
@@ -79,41 +110,56 @@
 
 (sig index-handler (Fn [&Request &(Map String String)] Response))
 (defn index-handler [req -params]
-  (let [main-content (render-index-main)]
-    (if (datastar-request? req)
-      (Datastar.response &(String.concat &[(page-title "Writing") main-content]))
-      (Response.html (document "Writing" &main-content)))))
+  (match (record-visit)
+    (Result.Success visitor-count)
+      (let [main-content (render-index-main)]
+        (if (datastar-request? req)
+          (Datastar.response
+            &(String.concat &[(page-title "Writing")
+                             main-content
+                             (visitor-count-output visitor-count)]))
+          (Response.html (document "Writing" &main-content visitor-count))))
+    (Result.Error error) (visitor-count-error &error)))
 
 (defn not-found-main []
   @"<main id='experience' class='post-mode'><article class='post'><header class='post-header'><p class='kicker'>404</p><h1>This memory has wandered off.</h1></header></article><a class='archive-orb' href='/' aria-label='Return to the writing archive'><span></span><span></span><span></span><b>Archive</b></a></main>")
 
-(defn not-found-response [is-datastar]
+(defn not-found-response [is-datastar visitor-count]
   (let [main-content (not-found-main)]
     (if is-datastar
-      (Datastar.response &(String.concat &[(page-title "Not found") main-content]))
+      (Datastar.response
+        &(String.concat &[(page-title "Not found")
+                         main-content
+                         (visitor-count-output visitor-count)]))
       (Response.with-status
-        (Response.html (document "Not found" &main-content))
+        (Response.html (document "Not found" &main-content visitor-count))
         404
         @"Not Found"))))
 
-(sig found-post-response (Fn [Bool String String String] Response))
-(defn found-post-response [is-datastar id title published]
+(sig found-post-response (Fn [Bool String String String Int] Response))
+(defn found-post-response [is-datastar id title published visitor-count]
   (let [path (String.concat &[@"content/posts/" @&id @".html"])
         body (IO.unsafe-read-file &path)
         main-content (render-article-main &title &published &body)]
     (if is-datastar
-      (Datastar.response &(String.concat &[(page-title &title) main-content]))
-      (Response.html (document &title &main-content)))))
+      (Datastar.response
+        &(String.concat &[(page-title &title)
+                         main-content
+                         (visitor-count-output visitor-count)]))
+      (Response.html (document &title &main-content visitor-count)))))
 
 (sig post-handler (Fn [&Request &(Map String String)] Response))
 (defn post-handler [req params]
   (let [is-datastar (datastar-request? req)
         id (Map.get params "id")]
-    (if (Posts.exists? &id)
-      (let [title (Posts.title &id)
-            published (Posts.published &id)]
-        (found-post-response is-datastar id title published))
-      (not-found-response is-datastar))))
+    (match (record-visit)
+      (Result.Success visitor-count)
+        (if (Posts.exists? &id)
+          (let [title (Posts.title &id)
+                published (Posts.published &id)]
+            (found-post-response is-datastar id title published visitor-count))
+          (not-found-response is-datastar visitor-count))
+      (Result.Error error) (visitor-count-error &error))))
 
 (defn health-handler [-req -params]
   (Response.text @"ok"))

@@ -16,13 +16,18 @@ RUN carp --eval-preload '(Project.config "compiler" "gcc -Wl,--no-as-needed")' m
 
 FROM debian:bookworm-slim
 
-RUN useradd --create-home --uid 10001 app
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends util-linux \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --uid 10001 app
 WORKDIR /app
 COPY --from=builder /src/out/persona-blog /app/persona-blog
 COPY content/ /app/content/
 COPY public/ /app/public/
-RUN chown -R app:app /app
+COPY scripts/container-entrypoint.sh /usr/local/bin/container-entrypoint.sh
+RUN mkdir -p /data \
+    && chown -R app:app /app \
+    && chown app:app /data
 
-USER app
 EXPOSE 8080
-CMD ["/app/persona-blog"]
+CMD ["sh", "/usr/local/bin/container-entrypoint.sh"]
